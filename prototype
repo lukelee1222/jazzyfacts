@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Auto-Generated Magazine</title>
+    <style>
+        /* CSS는 이전과 동일하게 유지하여 디자인을 보존합니다 */
+        body { margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #222; }
+        .navbar { position: fixed; top: 0; left: 0; width: 100%; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 1000; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%); border-bottom: 1px solid rgba(0, 0, 0, 0.05); }
+        .navbar-left, .navbar-right { display: flex; align-items: center; gap: 20px; font-weight: 500;}
+        .navbar-left span { cursor: pointer; color: #555; }
+        .navbar-left span:hover { color: #000; }
+        .search-bar { background: rgba(0, 0, 0, 0.05); border: none; padding: 12px 24px; border-radius: 30px; width: 350px; outline: none; font-size: 14px; transition: all 0.3s ease; }
+        .search-bar:focus { background: rgba(0, 0, 0, 0.1); width: 400px; }
+        .gallery-container { padding: 100px 30px 40px 30px; max-width: 1600px; margin: 0 auto; column-count: 4; column-gap: 20px; }
+        @media (max-width: 1200px) { .gallery-container { column-count: 3; } }
+        @media (max-width: 768px) { .gallery-container { column-count: 2; } }
+        .gallery-item { break-inside: avoid; margin-bottom: 20px; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease; }
+        .gallery-item:hover { transform: translateY(-5px); }
+        .gallery-item img { width: 100%; display: block; }
+        .magazine-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; justify-content: center; align-items: center; overflow: hidden; }
+        .modal-backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; filter: blur(40px) brightness(0.6); transform: scale(1.2); }
+        .modal-content { position: relative; z-index: 2001; background: #f4f4f4; width: 90%; max-width: 900px; height: 90vh; border-radius: 16px; overflow-y: auto; box-shadow: 0 30px 60px rgba(0,0,0,0.4); animation: fadeInUp 0.4s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-close { position: fixed; top: 40px; right: 40px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 24px; z-index: 2002; backdrop-filter: blur(5px); }
+        .modal-close:hover { background: black; }
+        .article-container { padding: 60px 40px; }
+        .article-header { text-align: center; margin-bottom: 40px; }
+        .article-title { font-size: 32px; font-weight: 900; margin-bottom: 10px; letter-spacing: -1px; }
+        .article-meta { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; }
+        .article-media img { width: 100%; border-radius: 4px; margin-bottom: 50px; }
+        .article-body { max-width: 700px; margin: 0 auto; }
+        .article-body p { font-size: 15px; line-height: 1.9; color: #333; margin-bottom: 30px; text-align: justify; }
+        .article-credits { max-width: 700px; margin: 50px auto 0; font-size: 14px; line-height: 1.8;}
+        .article-credits .role { font-weight: 800; display: inline-block; width: 130px; }
+        .article-credits .name { color: #d35400; }
+        .article-tags { max-width: 700px; margin: 40px auto 0; font-size: 13px; font-weight: 700; color: #e74c3c; border-top: 1px solid #ddd; padding-top: 20px;}
+        
+        /* 사용자 취향 분석 알림바 UI */
+        .ai-status { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 12px; font-weight: bold; z-index: 3000; opacity: 0; transition: opacity 0.5s; pointer-events: none;}
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-left">
+            <strong style="font-size: 20px; margin-right: 20px;">Runway Archive</strong>
+            <span>Collections</span>
+            <span>Critiques</span>
+        </div>
+        <div class="navbar-center">
+            <input type="text" class="search-bar" placeholder="디자이너 또는 시즌 검색...">
+        </div>
+        <div class="navbar-right">
+            <button style="border:none; background:#000; color:#fff; padding:10px 20px; border-radius:20px; cursor:pointer; font-weight:bold;">Create</button>
+        </div>
+    </nav>
+
+    <main class="gallery-container" id="gallery"></main>
+
+    <div class="magazine-modal" id="modal">
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-content">
+            <div class="article-container">
+                <div class="article-header">
+                    <div class="article-title" id="article-title">Loading...</div>
+                    <div class="article-meta" id="article-date">FEATURE</div>
+                </div>
+                <div class="article-media">
+                    <img id="modal-img-src" src="" alt="Runway Image">
+                </div>
+                <div class="article-body" id="article-content">
+                    </div>
+                <div class="article-credits">
+                    <div><span class="role">AI Critic Engine</span> <span class="name">Cosmo-V1</span></div>
+                    <div><span class="role">Data Source</span> <span>2026 Live Runway Data</span></div>
+                </div>
+                <div class="article-tags" id="article-tags">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-status" id="ai-status">AI가 사용자의 취향을 학습 중입니다...</div>
+
+    <script>
+        // 데이터베이스 시뮬레이션: 사진과 그에 맞는 태그들
+        const fashionData = [
+            { src: "https://images.unsplash.com/photo-1537832816519-689ad163238b?w=800&auto=format", tags: ["해체주의", "다크웨어"] },
+            { src: "https://images.unsplash.com/photo-1550614000-4b95d4ebfa88?w=800&auto=format", tags: ["미니멀리즘", "모노톤"] },
+            { src: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&auto=format", tags: ["아방가르드", "실루엣"] },
+            { src: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&auto=format", tags: ["레트로", "컬러풀"] },
+            { src: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format", tags: ["스트릿웨어", "유스컬처"] },
+            { src: "https://images.unsplash.com/photo-1583391733959-b202e860950b?w=800&auto=format", tags: ["하이패션", "소재혁신"] }
+        ];
+
+        // 사용자의 취향을 추적할 객체 (가상 머신러닝)
+        let userPreferences = {};
+
+        // 가상 AI 글쓰기 소스
+        const aiWritings = {
+            intros: [
+                "이번 시즌, 런웨이는 익숙한 문법을 거부하며 새로운 시대를 선언했다.",
+                "누군가는 패션의 끝을 말하지만, 이 컬렉션은 오히려 새로운 시작을 알리는 듯하다.",
+                "빛과 그림자, 그리고 모델의 걸음걸이가 만들어내는 완벽한 불협화음."
+            ],
+            bodies: [
+                "특히 이번에 보여준 텍스처의 활용은 전통적인 맞춤복의 경계를 허무는 시도였다.",
+                "관습적인 실루엣을 과감히 비틀어, 입는 사람의 페르소나를 극대화하는 데 집중했다.",
+                "화려함 이면에 숨겨진 철학적인 메시지가 컬렉션 전반에 묵직하게 깔려있다."
+            ],
+            outros: [
+                "이것은 단순한 옷이 아니라, 시대를 반영하는 날카로운 거울이다.",
+                "다음 시즌이 더욱 기대될 수밖에 없는, 압도적인 존재감의 증명이었다.",
+                "결국 패션은 끊임없이 진화한다는 사실을 우리는 다시 한번 목격했다."
+            ]
+        };
+
+        const gallery = document.getElementById('gallery');
+        const modal = document.getElementById('modal');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalImg = document.getElementById('modal-img-src');
+        const articleTitle = document.getElementById('article-title');
+        const articleContent = document.getElementById('article-content');
+        const articleTags = document.getElementById('article-tags');
+        const aiStatus = document.getElementById('ai-status');
+
+        // 갤러리 로딩
+        function loadGallery() {
+            fashionData.forEach(data => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.innerHTML = `<img src="${data.src}" alt="Fashion Runway">`;
+                item.onclick = () => onImageClick(data);
+                gallery.appendChild(item);
+            });
+        }
+
+        // 배열에서 랜덤 요소를 뽑는 함수
+        function getRandom(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // 사용자가 이미지를 클릭했을 때 일어나는 일
+        function onImageClick(data) {
+            // 1. 머신러닝 시뮬레이션: 태그 카운트 올리기
+            data.tags.forEach(tag => {
+                userPreferences[tag] = (userPreferences[tag] || 0) + 1;
+            });
+            
+            // 사용자가 가장 많이 클릭한 선호 태그 찾기
+            let topTag = Object.keys(userPreferences).reduce((a, b) => userPreferences[a] > userPreferences[b] ? a : b, data.tags[0]);
+
+            // 2. 상태 알림바 표시
+            aiStatus.innerText = `AI가 당신의 취향('${topTag}')을 기반으로 기사를 생성 중입니다...`;
+            aiStatus.style.opacity = '1';
+            setTimeout(() => { aiStatus.style.opacity = '0'; }, 3000);
+
+            // 3. AI 글쓰기 시뮬레이션
+            setTimeout(() => {
+                openModal(data, topTag);
+            }, 300); // 0.3초 딜레이로 생성하는 듯한 느낌 부여
+        }
+
+        function openModal(data, topTag) {
+            modal.style.display = 'flex';
+            modalImg.src = data.src;      
+            modalBackdrop.style.backgroundImage = `url(${data.src})`;
+            document.body.style.overflow = 'hidden';
+
+            // 동적 콘텐츠 삽입
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('article-date').innerText = `FEATURE ${today}`;
+            articleTitle.innerText = `${topTag}의 재해석: 2026 Collection`;
+            
+            // 랜덤으로 글 조립
+            articleContent.innerHTML = `
+                <p>${getRandom(aiWritings.intros)}</p>
+                <p>${data.tags[0]}와 ${data.tags[1]}의 결합을 통해, ${getRandom(aiWritings.bodies)}</p>
+                <p>${getRandom(aiWritings.outros)}</p>
+            `;
+
+            articleTags.innerText = `#${data.tags.join(' #')} #트렌드분석 #2026`;
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        loadGallery();
+    </script>
+</body>
+</html>
